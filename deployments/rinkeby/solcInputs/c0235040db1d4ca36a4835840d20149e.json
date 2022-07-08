@@ -1,0 +1,39 @@
+{
+	"language": "Solidity",
+	"sources": {
+		"contracts/FundMe.sol": {
+			"content": "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.8;\n\nimport \"./PriceConverter.sol\";\n\n// Custom Error\nerror NotOwner();\n\ncontract FundMe {\n\tusing PriceConverter for uint256;\n\n\tuint256 public constant MINIMUM_USD = 50 * 1e18;\n\n\t// Collecting the addresses of the funders\n\taddress[] public funders;\n\n\t// Mapping the funders to the amount they sent\n\tmapping(address => uint256) public addressToAmountFunded;\n\n\tfunction fund() public payable {\n\t\trequire(\n\t\t\tmsg.value.getConversionRate(priceFeed) >= MINIMUM_USD,\n\t\t\t/*reverting*/\n\t\t\t\"Please send more..\"\n\t\t);\n\t\t// Money math is done in terms of wei,\n\t\t// so, 1 ETH needs to be set as 1e18 value.\n\n\t\tfunders.push(msg.sender);\n\t\taddressToAmountFunded[msg.sender] = msg.value;\n\t}\n\n\tfunction withdraw() public onlyOwner {\n\t\tfor (\n\t\t\tuint256 funderIndex = 0;\n\t\t\tfunderIndex < funders.length;\n\t\t\tfunderIndex++\n\t\t) {\n\t\t\taddress funder = funders[funderIndex];\n\t\t\taddressToAmountFunded[funder] = 0;\n\t\t}\n\t\t// reset the funders array\n\t\tfunders = new address[](0);\n\n\t\t(bool callSuccess, ) = payable(msg.sender).call{\n\t\t\tvalue: address(this).balance\n\t\t}(\"\"); // this returns two variables\n\t\t//(                ,bytes memory dataReturned)\n\t\trequire(callSuccess, \"Call failed\");\n\t}\n\n\taddress public immutable i_owner;\n\n\t// 21,508 gas - immutable\n\t// 23,644 gas - non-immutable\n\n\tAggregatorV3Interface public priceFeed;\n\n\tconstructor(address priceFeedAddress) {\n\t\ti_owner = msg.sender; // whoever deploys the contract is the owner\n\t\tpriceFeed = AggregatorV3Interface(priceFeedAddress);\n\t}\n\n\tmodifier onlyOwner() {\n\t\tif (msg.sender != i_owner) {\n\t\t\trevert NotOwner();\n\t\t}\n\t\t_; // rest of the original code is executed by writing this underscore\n\t}\n\n\t// Special functions (constructor also) NO need to specify the \"function\" keyword.\n\treceive() external payable {\n\t\tfund();\n\t}\n\n\tfallback() external payable {\n\t\tfund();\n\t}\n}\n"
+		},
+		"contracts/PriceConverter.sol": {
+			"content": "// This is a LIBRARY\n// All the functions inside a library needs to be internal\n\n// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.8;\n\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\"; // NPM Package\n\nlibrary PriceConverter {\n\tfunction getPrice(AggregatorV3Interface priceFeed)\n\t\tinternal\n\t\tview\n\t\treturns (uint256)\n\t{\n\t\t(, int256 price, , , ) = priceFeed.latestRoundData();\n\n\t\t// msg.value and this should be equal in terms of formats\n\t\treturn uint256(price * 1e10); // (1 X 10)^10 == 10000000000\n\t}\n\n\tfunction getConversionRate(\n\t\tuint256 ethAmount,\n\t\tAggregatorV3Interface priceFeed\n\t) internal view returns (uint256) {\n\t\tuint256 ethPrice = getPrice(priceFeed);\n\t\tuint256 ethPriceInUsd = (ethPrice * ethAmount) / 1e18;\n\n\t\treturn ethPriceInUsd;\n\t}\n}\n"
+		},
+		"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+			"content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  // getRoundData and latestRoundData should both raise \"No data present\"\n  // if they do not have data to report, instead of returning unset values\n  // which could be misinterpreted as actual reported values.\n  function getRoundData(uint80 _roundId)\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n\n  function latestRoundData()\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n}\n"
+		}
+	},
+	"settings": {
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"outputSelection": {
+			"*": {
+				"*": [
+					"abi",
+					"evm.bytecode",
+					"evm.deployedBytecode",
+					"evm.methodIdentifiers",
+					"metadata",
+					"devdoc",
+					"userdoc",
+					"storageLayout",
+					"evm.gasEstimates"
+				],
+				"": ["ast"]
+			}
+		},
+		"metadata": {
+			"useLiteralContent": true
+		}
+	}
+}
