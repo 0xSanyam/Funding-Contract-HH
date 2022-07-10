@@ -2,7 +2,7 @@
 
 This project allows users to fund Eth and allows the deployer/owner of the contract to withdraw them.
 
-Some commands you can try running:
+Some commands to run:
 
 ```shell
 yarn hardhat compile
