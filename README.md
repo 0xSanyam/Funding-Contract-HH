@@ -4,7 +4,7 @@ This project allows users to fund Eth and allows the deployer/owner of the contr
 
 Some commands to run:
 
-```shell
+```
 yarn hardhat compile
 yarn hardhat clean
 yarn hardhat test
@@ -21,8 +21,8 @@ In this project, copy the hardhat.config file, and then edit it to fill in the d
 
 Make a .env file and edit it, enter your Etherscan API key, your Ropsten/Rinkeby node URL (e.g. from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
 
-```shell
-yarn hardhat deploy --network ropsten
+```
+yarn hardhat deploy --network rinkeby
 ```
 
 As you are deploying to a testnet, the hardhat deploy will automatically verify the contract!
